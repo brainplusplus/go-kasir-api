@@ -2,7 +2,7 @@ package handler
 
 import (
 	"encoding/json"
-	"kasir-api/internal/model"
+	"kasir-api/internal/adapter/inbound/http/dto"
 	"kasir-api/internal/port/inbound"
 	"kasir-api/internal/utils/swagger"
 	"net/http"
@@ -21,10 +21,10 @@ func NewCategoryHandler(service inbound.CategoryService, swag *swagger.Generator
 
 func (h *CategoryHandler) RegisterRoutes(mux *http.ServeMux) {
 	// Register to Swagger
-	h.swag.Register("GET", "/api/categories", "Get All Categories", nil, []model.Category{})
-	h.swag.Register("POST", "/api/categories", "Create New Category", model.Category{}, model.Category{})
-	h.swag.Register("GET", "/api/categories/{id}", "Get Category By ID", nil, model.Category{})
-	h.swag.Register("PUT", "/api/categories/{id}", "Update Category", model.Category{}, model.Category{})
+	h.swag.Register("GET", "/api/categories", "Get All Categories", nil, []dto.CategoryResponse{})
+	h.swag.Register("POST", "/api/categories", "Create New Category", dto.CreateCategoryRequest{}, dto.CategoryResponse{})
+	h.swag.Register("GET", "/api/categories/{id}", "Get Category By ID", nil, dto.CategoryResponse{})
+	h.swag.Register("PUT", "/api/categories/{id}", "Update Category", dto.UpdateCategoryRequest{}, dto.CategoryResponse{})
 	h.swag.Register("DELETE", "/api/categories/{id}", "Delete Category", nil, map[string]string{"message": "sukses"})
 
 	// Register to Mux
@@ -75,8 +75,14 @@ func (h *CategoryHandler) getAll(w http.ResponseWriter) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	var responses []dto.CategoryResponse
+	for _, c := range categories {
+		responses = append(responses, dto.FromDomainCategory(c))
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(categories)
+	json.NewEncoder(w).Encode(responses)
 }
 
 func (h *CategoryHandler) getByID(w http.ResponseWriter, id int) {
@@ -86,18 +92,18 @@ func (h *CategoryHandler) getByID(w http.ResponseWriter, id int) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(category)
+	json.NewEncoder(w).Encode(dto.FromDomainCategory(*category))
 }
 
 func (h *CategoryHandler) create(w http.ResponseWriter, r *http.Request) {
-	var c model.Category
-	err := json.NewDecoder(r.Body).Decode(&c)
+	var req dto.CreateCategoryRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
 
-	created, err := h.service.Create(c)
+	created, err := h.service.Create(req.ToDomain())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -105,25 +111,25 @@ func (h *CategoryHandler) create(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(created)
+	json.NewEncoder(w).Encode(dto.FromDomainCategory(created))
 }
 
 func (h *CategoryHandler) update(w http.ResponseWriter, r *http.Request, id int) {
-	var c model.Category
-	err := json.NewDecoder(r.Body).Decode(&c)
+	var req dto.UpdateCategoryRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
 
-	updated, err := h.service.Update(id, c)
+	updated, err := h.service.Update(id, req.ToDomain())
 	if err != nil {
 		http.Error(w, "Category not found", http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(updated)
+	json.NewEncoder(w).Encode(dto.FromDomainCategory(*updated))
 }
 
 func (h *CategoryHandler) delete(w http.ResponseWriter, id int) {

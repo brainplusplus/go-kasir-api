@@ -1,7 +1,7 @@
 package service
 
 import (
-	"kasir-api/internal/model"
+	"kasir-api/internal/domain"
 	"kasir-api/internal/port/inbound"
 	"kasir-api/internal/port/outbound"
 )
@@ -14,19 +14,19 @@ func NewCategoryService(repo outbound.CategoryRepository) inbound.CategoryServic
 	return &categoryService{repo: repo}
 }
 
-func (s *categoryService) GetAll() ([]model.Category, error) {
+func (s *categoryService) GetAll() ([]domain.Category, error) {
 	return s.repo.FindAll()
 }
 
-func (s *categoryService) GetByID(id int) (*model.Category, error) {
+func (s *categoryService) GetByID(id int) (*domain.Category, error) {
 	return s.repo.FindByID(id)
 }
 
-func (s *categoryService) Create(c model.Category) (model.Category, error) {
+func (s *categoryService) Create(c domain.Category) (domain.Category, error) {
 	return s.repo.Save(c)
 }
 
-func (s *categoryService) Update(id int, c model.Category) (*model.Category, error) {
+func (s *categoryService) Update(id int, c domain.Category) (*domain.Category, error) {
 	return s.repo.Update(id, c)
 }
 

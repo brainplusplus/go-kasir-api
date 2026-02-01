@@ -2,7 +2,7 @@ package handler
 
 import (
 	"encoding/json"
-	"kasir-api/internal/model"
+	"kasir-api/internal/adapter/inbound/http/dto"
 	"kasir-api/internal/port/inbound"
 	"kasir-api/internal/utils/swagger"
 	"net/http"
@@ -21,10 +21,10 @@ func NewProdukHandler(service inbound.ProdukService, swag *swagger.Generator) *P
 
 func (h *ProdukHandler) RegisterRoutes(mux *http.ServeMux) {
 	// Register to Swagger
-	h.swag.Register("GET", "/api/produk", "Get All Products", nil, []model.Produk{})
-	h.swag.Register("POST", "/api/produk", "Create New Product", model.Produk{}, model.Produk{})
-	h.swag.Register("GET", "/api/produk/{id}", "Get Product By ID", nil, model.Produk{})
-	h.swag.Register("PUT", "/api/produk/{id}", "Update Product", model.Produk{}, model.Produk{})
+	h.swag.Register("GET", "/api/produk", "Get All Products", nil, []dto.ProdukResponse{})
+	h.swag.Register("POST", "/api/produk", "Create New Product", dto.CreateProdukRequest{}, dto.ProdukResponse{})
+	h.swag.Register("GET", "/api/produk/{id}", "Get Product By ID", nil, dto.ProdukResponse{})
+	h.swag.Register("PUT", "/api/produk/{id}", "Update Product", dto.UpdateProdukRequest{}, dto.ProdukResponse{})
 	h.swag.Register("DELETE", "/api/produk/{id}", "Delete Product", nil, map[string]string{"message": "sukses"})
 
 	// Register to Mux
@@ -75,8 +75,14 @@ func (h *ProdukHandler) getAll(w http.ResponseWriter) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	var responses []dto.ProdukResponse
+	for _, p := range products {
+		responses = append(responses, dto.FromDomainProduk(p))
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(products)
+	json.NewEncoder(w).Encode(responses)
 }
 
 func (h *ProdukHandler) getByID(w http.ResponseWriter, id int) {
@@ -86,18 +92,18 @@ func (h *ProdukHandler) getByID(w http.ResponseWriter, id int) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(p)
+	json.NewEncoder(w).Encode(dto.FromDomainProduk(*p))
 }
 
 func (h *ProdukHandler) create(w http.ResponseWriter, r *http.Request) {
-	var p model.Produk
-	err := json.NewDecoder(r.Body).Decode(&p)
+	var req dto.CreateProdukRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
 
-	created, err := h.service.Create(p)
+	created, err := h.service.Create(req.ToDomain())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -105,25 +111,25 @@ func (h *ProdukHandler) create(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(created)
+	json.NewEncoder(w).Encode(dto.FromDomainProduk(created))
 }
 
 func (h *ProdukHandler) update(w http.ResponseWriter, r *http.Request, id int) {
-	var p model.Produk
-	err := json.NewDecoder(r.Body).Decode(&p)
+	var req dto.UpdateProdukRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
 
-	updated, err := h.service.Update(id, p)
+	updated, err := h.service.Update(id, req.ToDomain())
 	if err != nil {
 		http.Error(w, "Produk belum ada", http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(updated)
+	json.NewEncoder(w).Encode(dto.FromDomainProduk(*updated))
 }
 
 func (h *ProdukHandler) delete(w http.ResponseWriter, id int) {
