@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/viper"
@@ -21,11 +22,14 @@ func LoadConfig() (*Config, error) {
 	viper.AutomaticEnv()
 
 	if _, err := os.Stat(".env"); err == nil {
+		fmt.Println("Local .env file found, loading config from file...")
 		viper.SetConfigFile(".env")
 		viper.SetConfigType("env")
 		if err := viper.ReadInConfig(); err != nil {
 			return nil, err
 		}
+	} else {
+		fmt.Println("No .env file found, using OS Environment Variables")
 	}
 
 	var config Config
@@ -43,6 +47,9 @@ func LoadConfig() (*Config, error) {
 	if config.Storage == "" {
 		config.Storage = "memory"
 	}
+
+	fmt.Printf("Config loaded from: %s\n", config.Storage)
+	fmt.Printf("Running on Port: %s\n", config.Port)
 
 	return &config, nil
 }
