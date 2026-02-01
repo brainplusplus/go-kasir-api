@@ -2,19 +2,37 @@ package internal
 
 import (
 	"encoding/json"
+	"fmt"
 	httpAdapter "kasir-api/internal/adapter/inbound/http"
 	httpHandler "kasir-api/internal/adapter/inbound/http/handler"
 	"kasir-api/internal/adapter/outbound/memory"
+	"kasir-api/internal/adapter/outbound/persistence"
+	"kasir-api/internal/config"
+	"kasir-api/internal/port/outbound"
 	"kasir-api/internal/service"
 	"kasir-api/internal/utils/swagger"
 	"net/http"
+
+	"gorm.io/gorm"
 )
 
-func NewApp() http.Handler {
-	// Initialize dependencies
-	produkRepo := memory.NewInMemoryProdukRepository()
-	categoryRepo := memory.NewInMemoryCategoryRepository()
-	produkService := service.NewProductService(produkRepo)
+func NewApp(cfg *config.Config, db *gorm.DB) http.Handler {
+	var produkRepo outbound.ProdukRepository
+	var categoryRepo outbound.CategoryRepository
+
+	// Initialize Repository based on Config
+	if cfg.Storage == "postgres" && db != nil {
+		fmt.Println("Using Postgres Storage")
+		produkRepo = persistence.NewDBProdukRepository(db)
+		categoryRepo = persistence.NewDBCategoryRepository(db)
+	} else {
+		fmt.Println("Using In-Memory Storage")
+		produkRepo = memory.NewInMemoryProdukRepository()
+		categoryRepo = memory.NewInMemoryCategoryRepository()
+	}
+
+	// Initialize Services
+	produkService := service.NewProdukService(produkRepo)
 	categoryService := service.NewCategoryService(categoryRepo)
 
 	// Initialize Swagger Generator

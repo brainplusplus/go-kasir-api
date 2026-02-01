@@ -1,7 +1,7 @@
 package service
 
 import (
-	"kasir-api/internal/model"
+	"kasir-api/internal/domain"
 	"kasir-api/internal/port/inbound"
 	"kasir-api/internal/port/outbound"
 )
@@ -10,23 +10,23 @@ type productService struct {
 	repo outbound.ProdukRepository
 }
 
-func NewProductService(repo outbound.ProdukRepository) inbound.ProdukService {
+func NewProdukService(repo outbound.ProdukRepository) inbound.ProdukService {
 	return &productService{repo: repo}
 }
 
-func (s *productService) GetAll() ([]model.Produk, error) {
+func (s *productService) GetAll() ([]domain.Produk, error) {
 	return s.repo.FindAll()
 }
 
-func (s *productService) GetByID(id int) (*model.Produk, error) {
+func (s *productService) GetByID(id int) (*domain.Produk, error) {
 	return s.repo.FindByID(id)
 }
 
-func (s *productService) Create(p model.Produk) (model.Produk, error) {
+func (s *productService) Create(p domain.Produk) (domain.Produk, error) {
 	return s.repo.Save(p)
 }
 
-func (s *productService) Update(id int, p model.Produk) (*model.Produk, error) {
+func (s *productService) Update(id int, p domain.Produk) (*domain.Produk, error) {
 	return s.repo.Update(id, p)
 }
 
