@@ -27,7 +27,9 @@ func main() {
 	if cfg.Storage == "postgres" {
 		dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
 			cfg.DBHost, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBPort, cfg.DBSSLMode)
-		db, err = gorm.Open(driver.Open(dsn), &gorm.Config{})
+		db, err = gorm.Open(driver.Open(dsn), &gorm.Config{
+			PrepareStmt: false, // Required for Supabase Transaction Mode (PgBouncer)
+		})
 		if err != nil {
 			log.Fatalf("Failed to connect to database: %v", err)
 		}
@@ -45,6 +47,6 @@ func main() {
 	fmt.Printf("Server running di localhost:%s\n", cfg.Port)
 	err = http.ListenAndServe(":"+cfg.Port, handler)
 	if err != nil {
-		fmt.Println("gagal running server")
+		fmt.Printf("Failed running server: %v\n", err)
 	}
 }
