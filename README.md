@@ -11,27 +11,21 @@ This project follows the Hexagonal Architecture (Ports and Adapters) pattern to 
 ```
 ├── internal/
 │   ├── app.go                   # Application wiring (Dependency Injection)
-│   ├── service/                 # Service Implementations (Business Logic)
-│   │   ├── category.go          # Category Business Logic
-│   │   └── produk.go            # Product Business Logic
+│   ├── config/                  # Configuration Loading (Viper)
+│   ├── domain/                  # Domain Models (Produk, Category)
 │   ├── port/                    # Interfaces (Ports)
 │   │   ├── inbound/             # Input Ports (Service Interfaces)
 │   │   └── outbound/            # Output Ports (Repository Interfaces)
-│   ├── adapter/                 # Implementations (Adapters)
-│   │   ├── inbound/             # Input Adapters (HTTP Handlers & Routes)
-│   │   │   ├── http/            # HTTP Adapter
-│   │   │   │   ├── handler/     # HTTP Handlers (Produk, Category)
-│   │   │   │   ├── middleware.go # HTTP Middlewares
-│   │   │   │   └── routes.go    # Router Configuration
-│   │   └── outbound/            # Output Adapters (Repositories)
-│   │       └── memory/          # In-Memory Repository Implementation
-│   ├── model/                   # Data Models (Structs)
-│   └── utils/                   # Utilities
-│       └── swagger/             # Custom Swagger Generator
+│   ├── service/                 # Service Implementations (Business Logic)
+│   └── adapter/                 # Implementations (Adapters)
+│       ├── inbound/             # Input Adapters (HTTP Handlers & Routes)
+│       │   └── http/
+│       │       ├── dto/         # Data Transfer Objects
+│       │       └── handler/     # HTTP Handlers (Produk, Category)
+│       └── outbound/            # Output Adapters (Repositories)
+│           ├── memory/          # In-Memory Repository Implementation
+│           └── persistence/     # Database Repository Implementation (GORM)
 ├── main.go                      # Entry point
-├── kill_port.ps1                # Helper to kill app port (Windows PowerShell)
-├── kill_port.sh                 # Helper to kill app port (Windows Git Bash)
-├── kill_port_linux.sh           # Helper to kill app port (Linux Native)
 ├── .env                         # Environment Variables (Config)
 └── .gitignore                   # Git Ignore Rules
 ```
@@ -41,13 +35,23 @@ This project follows the Hexagonal Architecture (Ports and Adapters) pattern to 
 ### Prerequisites
 
 - Go 1.20+
+- PostgreSQL (Optional, defaults to In-Memory if not configured)
 
 ### Setup
 
-1. Copy `.env.example` to `.env` (or create one):
+1. Copy `.env.example` to `.env`:
 
 ```env
-PORT=6001
+PORT=8080
+STORAGE=postgres
+
+# Database Configuration
+DB_HOST=localhost
+DB_USER=postgres
+DB_PASSWORD=password
+DB_NAME=kasir_api
+DB_PORT=5432
+DB_SSLMODE=disable # Use 'require' for cloud DBs like Supabase
 ```
 
 2. Run the application:
@@ -56,34 +60,37 @@ PORT=6001
 go run main.go
 ```
 
-The server will start at `http://localhost:6001` (or the port defined in `.env`).
+The server will start at `http://localhost:8080` (or the port defined in `.env`).
 
-### Helper Scripts
+### SSL Mode
 
-If you encounter "Port already in use" errors:
+If you are connecting to a cloud database (e.g., Supabase, Neon) that requires SSL, likely set `DB_SSLMODE=require` in your `.env`.
 
-- **Windows (PowerShell)**: `.\kill_port.ps1`
-- **Windows (Git Bash)**: `./kill_port.sh`
-- **Linux**: `./kill_port_linux.sh`
-
-## API Documentation (Swagger)
-
-The API documentation is automatically generated.
-
-- **Swagger UI**: [http://localhost:6001/swagger](http://localhost:6001/swagger)
-- **JSON Spec**: [http://localhost:6001/swagger.json](http://localhost:6001/swagger.json)
+**Note for Supabase Users**: Use the **Connection Pooler** (IPv4, usually port 6543) if your local network does not support IPv6.
 
 ## API Endpoints
 
 ### Products
 
+**Response Format**: Product details now include nested Category information.
+
 | Method | Endpoint | Description |
 | --- | --- | --- |
 | `GET` | `/api/produk` | Get all products |
-| `GET` | `/api/produk/{id}` | Get product by ID |
-| `POST` | `/api/produk` | Create a new product |
+| `GET` | `/api/produk/{id}` | Get product by ID (includes `category` object) |
+| `POST` | `/api/produk` | Create a new product (requires `category_id`) |
 | `PUT` | `/api/produk/{id}` | Update a product |
 | `DELETE` | `/api/produk/{id}` | Delete a product |
+
+**Example POST Payload:**
+```json
+{
+    "name": "Indomie",
+    "price": 3500,
+    "stock": 100,
+    "category_id": 1
+}
+```
 
 ### Categories
 
@@ -98,3 +105,7 @@ The API documentation is automatically generated.
 ### Health Check
 
 - `GET /health` - Check API status
+
+## CLI Helpers
+
+- `kill_port.ps1` / `kill_port.sh` - Scripts to free up port 8080 if usage conflict occurs.
