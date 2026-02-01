@@ -22,14 +22,14 @@ func LoadConfig() (*Config, error) {
 
 	if _, err := os.Stat(".env"); err == nil {
 		viper.SetConfigFile(".env")
+		viper.SetConfigType("env")
 		if err := viper.ReadInConfig(); err != nil {
 			return nil, err
 		}
 	}
 
 	var config Config
-	err := viper.Unmarshal(&config)
-	if err != nil {
+	if err := viper.Unmarshal(&config); err != nil {
 		return nil, err
 	}
 
