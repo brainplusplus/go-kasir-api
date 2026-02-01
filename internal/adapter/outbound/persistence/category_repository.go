@@ -22,7 +22,7 @@ func (r *DBCategoryRepository) FindAll() ([]domain.Category, error) {
 	if err := r.db.Find(&categories).Error; err != nil {
 		return nil, err
 	}
-	var domainCategories []domain.Category
+	domainCategories := make([]domain.Category, 0)
 	for _, c := range categories {
 		domainCategories = append(domainCategories, c.ToDomain())
 	}

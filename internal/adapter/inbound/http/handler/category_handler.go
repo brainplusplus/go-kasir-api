@@ -76,7 +76,7 @@ func (h *CategoryHandler) getAll(w http.ResponseWriter) {
 		return
 	}
 
-	var responses []dto.CategoryResponse
+	responses := make([]dto.CategoryResponse, 0)
 	for _, c := range categories {
 		responses = append(responses, dto.FromDomainCategory(c))
 	}
