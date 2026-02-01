@@ -46,6 +46,14 @@ func (r *DBProdukRepository) Save(p domain.Produk) (domain.Produk, error) {
 	if err := r.db.Create(&product).Error; err != nil {
 		return domain.Produk{}, err
 	}
+
+	// Reload with Category
+	if err := r.db.Preload("Category").First(&product, product.ID).Error; err != nil {
+		// Log error but maybe don't fail? Or fail because consistency is key?
+		// Failing here is safer to indicate something went wrong with fetching back.
+		return domain.Produk{}, err
+	}
+
 	return product.ToDomain(), nil
 }
 
@@ -61,8 +69,14 @@ func (r *DBProdukRepository) Update(id int, p domain.Produk) (*domain.Produk, er
 	product.Name = p.Name
 	product.Price = p.Price
 	product.Stock = p.Stock
+	product.CategoryID = p.CategoryID // Ensure CategoryID is updated if provided
 
 	if err := r.db.Save(&product).Error; err != nil {
+		return nil, err
+	}
+
+	// Reload with Category
+	if err := r.db.Preload("Category").First(&product, id).Error; err != nil {
 		return nil, err
 	}
 
