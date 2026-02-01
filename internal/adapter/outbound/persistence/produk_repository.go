@@ -22,7 +22,7 @@ func (r *DBProdukRepository) FindAll() ([]domain.Produk, error) {
 	if err := r.db.Preload("Category").Find(&products).Error; err != nil {
 		return nil, err
 	}
-	var domainProducts []domain.Produk
+	domainProducts := make([]domain.Produk, 0)
 	for _, p := range products {
 		domainProducts = append(domainProducts, p.ToDomain())
 	}

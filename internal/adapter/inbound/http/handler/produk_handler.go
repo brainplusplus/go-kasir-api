@@ -76,7 +76,7 @@ func (h *ProdukHandler) getAll(w http.ResponseWriter) {
 		return
 	}
 
-	var responses []dto.ProdukResponse
+	responses := make([]dto.ProdukResponse, 0)
 	for _, p := range products {
 		responses = append(responses, dto.FromDomainProduk(p))
 	}

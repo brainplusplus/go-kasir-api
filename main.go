@@ -8,7 +8,7 @@ import (
 	"log"
 	"net/http"
 
-	driver "gorm.io/driver/postgres"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -27,8 +27,11 @@ func main() {
 	if cfg.Storage == "postgres" {
 		dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
 			cfg.DBHost, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBPort, cfg.DBSSLMode)
-		db, err = gorm.Open(driver.Open(dsn), &gorm.Config{
-			PrepareStmt: false, // Required for Supabase Transaction Mode (PgBouncer)
+		db, err = gorm.Open(postgres.New(postgres.Config{
+			DSN:                  dsn,
+			PreferSimpleProtocol: true, // Disables implicit prepared statement usage (Driver Level)
+		}), &gorm.Config{
+			PrepareStmt: false, // Disables GORM's statement caching (ORM Level)
 		})
 		if err != nil {
 			log.Fatalf("Failed to connect to database: %v", err)
