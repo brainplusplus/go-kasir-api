@@ -33,9 +33,15 @@ func LoadConfig() (*Config, error) {
 	}
 
 	var config Config
-	if err := viper.Unmarshal(&config); err != nil {
-		return nil, err
-	}
+	// Manual mapping to ensure keys are read from Env even if .env is missing
+	config.Port = viper.GetString("PORT")
+	config.Storage = viper.GetString("STORAGE")
+	config.DBHost = viper.GetString("DB_HOST")
+	config.DBUser = viper.GetString("DB_USER")
+	config.DBPassword = viper.GetString("DB_PASSWORD")
+	config.DBName = viper.GetString("DB_NAME")
+	config.DBPort = viper.GetString("DB_PORT")
+	config.DBSSLMode = viper.GetString("DB_SSLMODE")
 
 	// Set Defaults
 	if config.Port == "" {
