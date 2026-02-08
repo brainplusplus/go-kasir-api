@@ -12,16 +12,19 @@ This project follows the Hexagonal Architecture (Ports and Adapters) pattern to 
 ├── internal/
 │   ├── app.go                   # Application wiring (Dependency Injection)
 │   ├── config/                  # Configuration Loading (Viper)
-│   ├── domain/                  # Domain Models (Produk, Category)
+│   ├── domain/                  # Domain Models (Produk, Category, Transaction, Report)
 │   ├── port/                    # Interfaces (Ports)
 │   │   ├── inbound/             # Input Ports (Service Interfaces)
 │   │   └── outbound/            # Output Ports (Repository Interfaces)
 │   ├── service/                 # Service Implementations (Business Logic)
+│   │   ├── category_service.go
+│   │   ├── produk_service.go
+│   │   └── transaction_service.go
 │   └── adapter/                 # Implementations (Adapters)
 │       ├── inbound/             # Input Adapters (HTTP Handlers & Routes)
 │       │   └── http/
 │       │       ├── dto/         # Data Transfer Objects
-│       │       └── handler/     # HTTP Handlers (Produk, Category)
+│       │       └── handler/     # HTTP Handlers
 │       └── outbound/            # Output Adapters (Repositories)
 │           ├── memory/          # In-Memory Repository Implementation
 │           └── persistence/     # Database Repository Implementation (GORM)
@@ -101,6 +104,47 @@ If you are connecting to a cloud database (e.g., Supabase, Neon) that requires S
 | `POST` | `/api/categories` | Create a new category |
 | `PUT` | `/api/categories/{id}` | Update a category |
 | `DELETE` | `/api/categories/{id}` | Delete a category |
+
+### Transactions
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `POST` | `/api/checkout` | Create a new transaction (Checkout) |
+
+**Example POST Payload:**
+```json
+{
+    "items": [
+        {
+            "product_id": 16,
+            "qty": 2
+        },
+        {
+            "product_id": 1,
+            "qty": 1
+        }
+    ]
+}
+```
+
+### Reports
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/api/report` | Get sales report. Default: Today. Supports `start_date` and `end_date`. |
+| `GET` | `/api/report/hari-ini` | Get daily report (Alias for Today). |
+
+**Example Response:**
+```json
+{
+    "total_revenue": 155000,
+    "total_transaksi": 10,
+    "produk_terlaris": {
+        "nama": "Kopi",
+        "qty_terjual": 15
+    }
+}
+```
 
 ### Health Check
 

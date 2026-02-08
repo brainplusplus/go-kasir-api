@@ -1,6 +1,7 @@
 package persistence
 
 import (
+	"context"
 	"errors"
 	"kasir-api/internal/adapter/outbound/persistence/entity"
 	"kasir-api/internal/domain"
@@ -17,9 +18,10 @@ func NewDBCategoryRepository(db *gorm.DB) outbound.CategoryRepository {
 	return &DBCategoryRepository{db: db}
 }
 
-func (r *DBCategoryRepository) FindAll() ([]domain.Category, error) {
+func (r *DBCategoryRepository) FindAll(ctx context.Context) ([]domain.Category, error) {
 	var categories []entity.Category
-	if err := r.db.Find(&categories).Error; err != nil {
+	db := getDB(ctx, r.db)
+	if err := db.Find(&categories).Error; err != nil {
 		return nil, err
 	}
 	domainCategories := make([]domain.Category, 0)
@@ -29,9 +31,10 @@ func (r *DBCategoryRepository) FindAll() ([]domain.Category, error) {
 	return domainCategories, nil
 }
 
-func (r *DBCategoryRepository) FindByID(id int) (*domain.Category, error) {
+func (r *DBCategoryRepository) FindByID(ctx context.Context, id int) (*domain.Category, error) {
 	var category entity.Category
-	if err := r.db.First(&category, id).Error; err != nil {
+	db := getDB(ctx, r.db)
+	if err := db.First(&category, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("category not found")
 		}
@@ -41,17 +44,19 @@ func (r *DBCategoryRepository) FindByID(id int) (*domain.Category, error) {
 	return &d, nil
 }
 
-func (r *DBCategoryRepository) Save(c domain.Category) (domain.Category, error) {
+func (r *DBCategoryRepository) Save(ctx context.Context, c domain.Category) (domain.Category, error) {
 	category := entity.FromDomainCategory(c)
-	if err := r.db.Create(&category).Error; err != nil {
+	db := getDB(ctx, r.db)
+	if err := db.Create(&category).Error; err != nil {
 		return domain.Category{}, err
 	}
 	return category.ToDomain(), nil
 }
 
-func (r *DBCategoryRepository) Update(id int, c domain.Category) (*domain.Category, error) {
+func (r *DBCategoryRepository) Update(ctx context.Context, id int, c domain.Category) (*domain.Category, error) {
 	var category entity.Category
-	if err := r.db.First(&category, id).Error; err != nil {
+	db := getDB(ctx, r.db)
+	if err := db.First(&category, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("category not found")
 		}
@@ -62,7 +67,7 @@ func (r *DBCategoryRepository) Update(id int, c domain.Category) (*domain.Catego
 	category.Name = c.Name
 	category.Description = c.Description
 
-	if err := r.db.Save(&category).Error; err != nil {
+	if err := db.Save(&category).Error; err != nil {
 		return nil, err
 	}
 
@@ -70,8 +75,9 @@ func (r *DBCategoryRepository) Update(id int, c domain.Category) (*domain.Catego
 	return &d, nil
 }
 
-func (r *DBCategoryRepository) Delete(id int) error {
-	result := r.db.Delete(&entity.Category{}, id)
+func (r *DBCategoryRepository) Delete(ctx context.Context, id int) error {
+	db := getDB(ctx, r.db)
+	result := db.Delete(&entity.Category{}, id)
 	if result.Error != nil {
 		return result.Error
 	}
