@@ -9,12 +9,20 @@ import (
 	"github.com/invopop/jsonschema"
 )
 
+type QueryParam struct {
+	Name        string
+	Type        string
+	Description string
+	Required    bool
+}
+
 type Route struct {
 	Method      string
 	Path        string
 	Description string
 	Request     interface{}
 	Response    interface{}
+	QueryParams []QueryParam
 }
 
 type Generator struct {
@@ -38,6 +46,17 @@ func (g *Generator) Register(method, path, description string, req interface{}, 
 		Description: description,
 		Request:     req,
 		Response:    res,
+	})
+}
+
+func (g *Generator) RegisterWithQuery(method, path, description string, req interface{}, res interface{}, queryParams []QueryParam) {
+	g.Routes = append(g.Routes, Route{
+		Method:      method,
+		Path:        path,
+		Description: description,
+		Request:     req,
+		Response:    res,
+		QueryParams: queryParams,
 	})
 }
 
@@ -109,6 +128,34 @@ func (g *Generator) Generate() map[string]interface{} {
 				})
 			}
 			operation["parameters"] = parameters
+		}
+
+		// Handle Query Parameters
+		if len(route.QueryParams) > 0 {
+			allParams := []interface{}{}
+			// Copy existing inputs (from path params)
+			if p, ok := operation["parameters"]; ok {
+				if existing, ok := p.([]map[string]interface{}); ok {
+					for _, item := range existing {
+						allParams = append(allParams, item)
+					}
+				}
+			}
+
+			for _, q := range route.QueryParams {
+				param := map[string]interface{}{
+					"name":        q.Name,
+					"in":          "query",
+					"schema":      map[string]string{"type": q.Type},
+					"description": q.Description,
+					"required":    q.Required,
+				}
+				if q.Type == "" {
+					param["schema"] = map[string]string{"type": "string"}
+				}
+				allParams = append(allParams, param)
+			}
+			operation["parameters"] = allParams
 		}
 
 		// Handle Request Body

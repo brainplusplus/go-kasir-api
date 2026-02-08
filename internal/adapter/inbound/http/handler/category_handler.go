@@ -43,11 +43,11 @@ func (h *CategoryHandler) HandleCategory(w http.ResponseWriter, r *http.Request)
 		}
 
 		if r.Method == "GET" {
-			h.getByID(w, id)
+			h.getByID(w, r, id)
 		} else if r.Method == "PUT" {
 			h.update(w, r, id)
 		} else if r.Method == "DELETE" {
-			h.delete(w, id)
+			h.delete(w, r, id)
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
@@ -57,7 +57,7 @@ func (h *CategoryHandler) HandleCategory(w http.ResponseWriter, r *http.Request)
 	// /api/categories
 	if r.URL.Path == "/api/categories" || r.URL.Path == "/api/categories/" {
 		if r.Method == "GET" {
-			h.getAll(w)
+			h.getAll(w, r)
 		} else if r.Method == "POST" {
 			h.create(w, r)
 		} else {
@@ -69,8 +69,8 @@ func (h *CategoryHandler) HandleCategory(w http.ResponseWriter, r *http.Request)
 	http.NotFound(w, r)
 }
 
-func (h *CategoryHandler) getAll(w http.ResponseWriter) {
-	categories, err := h.service.GetAll()
+func (h *CategoryHandler) getAll(w http.ResponseWriter, r *http.Request) {
+	categories, err := h.service.GetAll(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -85,8 +85,8 @@ func (h *CategoryHandler) getAll(w http.ResponseWriter) {
 	json.NewEncoder(w).Encode(responses)
 }
 
-func (h *CategoryHandler) getByID(w http.ResponseWriter, id int) {
-	category, err := h.service.GetByID(id)
+func (h *CategoryHandler) getByID(w http.ResponseWriter, r *http.Request, id int) {
+	category, err := h.service.GetByID(r.Context(), id)
 	if err != nil {
 		http.Error(w, "Category not found", http.StatusNotFound)
 		return
@@ -103,7 +103,7 @@ func (h *CategoryHandler) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	created, err := h.service.Create(req.ToDomain())
+	created, err := h.service.Create(r.Context(), req.ToDomain())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -122,7 +122,7 @@ func (h *CategoryHandler) update(w http.ResponseWriter, r *http.Request, id int)
 		return
 	}
 
-	updated, err := h.service.Update(id, req.ToDomain())
+	updated, err := h.service.Update(r.Context(), id, req.ToDomain())
 	if err != nil {
 		http.Error(w, "Category not found", http.StatusNotFound)
 		return
@@ -132,8 +132,8 @@ func (h *CategoryHandler) update(w http.ResponseWriter, r *http.Request, id int)
 	json.NewEncoder(w).Encode(dto.FromDomainCategory(*updated))
 }
 
-func (h *CategoryHandler) delete(w http.ResponseWriter, id int) {
-	err := h.service.Delete(id)
+func (h *CategoryHandler) delete(w http.ResponseWriter, r *http.Request, id int) {
+	err := h.service.Delete(r.Context(), id)
 	if err != nil {
 		http.Error(w, "Category not found", http.StatusNotFound)
 		return

@@ -1,11 +1,14 @@
 package outbound
 
-import "kasir-api/internal/domain"
+import (
+	"context"
+	"kasir-api/internal/domain"
+)
 
 type CategoryRepository interface {
-	FindAll() ([]domain.Category, error)
-	FindByID(id int) (*domain.Category, error)
-	Save(c domain.Category) (domain.Category, error)
-	Update(id int, c domain.Category) (*domain.Category, error)
-	Delete(id int) error
+	FindAll(ctx context.Context) ([]domain.Category, error)
+	FindByID(ctx context.Context, id int) (*domain.Category, error)
+	Save(ctx context.Context, c domain.Category) (domain.Category, error)
+	Update(ctx context.Context, id int, c domain.Category) (*domain.Category, error)
+	Delete(ctx context.Context, id int) error
 }

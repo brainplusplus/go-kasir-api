@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"errors"
 	"kasir-api/internal/domain"
 	"kasir-api/internal/port/outbound"
@@ -20,11 +21,11 @@ func NewInMemoryCategoryRepository() outbound.CategoryRepository {
 	}
 }
 
-func (r *InMemoryCategoryRepository) FindAll() ([]domain.Category, error) {
+func (r *InMemoryCategoryRepository) FindAll(ctx context.Context) ([]domain.Category, error) {
 	return r.category, nil
 }
 
-func (r *InMemoryCategoryRepository) FindByID(id int) (*domain.Category, error) {
+func (r *InMemoryCategoryRepository) FindByID(ctx context.Context, id int) (*domain.Category, error) {
 	for _, c := range r.category {
 		if c.ID == id {
 			return &c, nil
@@ -33,13 +34,13 @@ func (r *InMemoryCategoryRepository) FindByID(id int) (*domain.Category, error) 
 	return nil, errors.New("category not found")
 }
 
-func (r *InMemoryCategoryRepository) Save(c domain.Category) (domain.Category, error) {
+func (r *InMemoryCategoryRepository) Save(ctx context.Context, c domain.Category) (domain.Category, error) {
 	c.ID = len(r.category) + 1
 	r.category = append(r.category, c)
 	return c, nil
 }
 
-func (r *InMemoryCategoryRepository) Update(id int, c domain.Category) (*domain.Category, error) {
+func (r *InMemoryCategoryRepository) Update(ctx context.Context, id int, c domain.Category) (*domain.Category, error) {
 	for i, existing := range r.category {
 		if existing.ID == id {
 			c.ID = id
@@ -50,7 +51,7 @@ func (r *InMemoryCategoryRepository) Update(id int, c domain.Category) (*domain.
 	return nil, errors.New("category not found")
 }
 
-func (r *InMemoryCategoryRepository) Delete(id int) error {
+func (r *InMemoryCategoryRepository) Delete(ctx context.Context, id int) error {
 	for i, c := range r.category {
 		if c.ID == id {
 			r.category = append(r.category[:i], r.category[i+1:]...)

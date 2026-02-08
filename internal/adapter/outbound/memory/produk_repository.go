@@ -1,9 +1,11 @@
 package memory
 
 import (
+	"context"
 	"errors"
 	"kasir-api/internal/domain"
 	"kasir-api/internal/port/outbound"
+	"strings"
 )
 
 type InMemoryProdukRepository struct {
@@ -20,42 +22,63 @@ func NewInMemoryProdukRepository() outbound.ProdukRepository {
 	}
 }
 
-func (r *InMemoryProdukRepository) FindAll() ([]domain.Produk, error) {
-	return r.products, nil
-}
-
-func (r *InMemoryProdukRepository) FindByID(id int) (*domain.Produk, error) {
+func (r *InMemoryProdukRepository) FindAll(ctx context.Context, search string) ([]domain.Produk, error) {
+	if search == "" {
+		return r.products, nil
+	}
+	var filtered []domain.Produk
 	for _, p := range r.products {
-		if p.ID == id {
-			return &p, nil
+		if strings.Contains(strings.ToLower(p.Name), strings.ToLower(search)) {
+			filtered = append(filtered, p)
 		}
 	}
-	return nil, errors.New("product not found")
+	return filtered, nil
 }
 
-func (r *InMemoryProdukRepository) Save(p domain.Produk) (domain.Produk, error) {
+func (r *InMemoryProdukRepository) FindByID(ctx context.Context, id int) (domain.Produk, error) {
+	for _, p := range r.products {
+		if p.ID == id {
+			return p, nil
+		}
+	}
+	return domain.Produk{}, errors.New("product not found")
+}
+
+func (r *InMemoryProdukRepository) Save(ctx context.Context, p domain.Produk) (domain.Produk, error) {
 	p.ID = len(r.products) + 1
-	// In a real memory implementation with join, we would lookup category name here.
-	// For simplicity, we assume it's passed or ignored.
 	r.products = append(r.products, p)
 	return p, nil
 }
 
-func (r *InMemoryProdukRepository) Update(id int, p domain.Produk) (*domain.Produk, error) {
+func (r *InMemoryProdukRepository) Update(ctx context.Context, p domain.Produk) (domain.Produk, error) {
 	for i, product := range r.products {
-		if product.ID == id {
-			p.ID = id
+		if product.ID == p.ID {
+			// Update fields
+			// Ensure we keep ID and maybe verify existence
 			r.products[i] = p
-			return &p, nil
+			return p, nil
 		}
 	}
-	return nil, errors.New("product not found")
+	return domain.Produk{}, errors.New("product not found")
 }
 
-func (r *InMemoryProdukRepository) Delete(id int) error {
+func (r *InMemoryProdukRepository) Delete(ctx context.Context, id int) error {
 	for i, p := range r.products {
 		if p.ID == id {
 			r.products = append(r.products[:i], r.products[i+1:]...)
+			return nil
+		}
+	}
+	return errors.New("product not found")
+}
+
+func (r *InMemoryProdukRepository) UpdateStock(ctx context.Context, id int, qty int) error {
+	for i, p := range r.products {
+		if p.ID == id {
+			if p.Stock < qty {
+				return errors.New("insufficient stock")
+			}
+			r.products[i].Stock -= qty
 			return nil
 		}
 	}

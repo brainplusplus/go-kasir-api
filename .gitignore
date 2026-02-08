@@ -27,3 +27,5 @@ go.work
 # OS specific
 .DS_Store
 Thumbs.db
+
+debug.log

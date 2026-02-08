@@ -43,11 +43,11 @@ func (h *ProdukHandler) HandleProduk(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if r.Method == "GET" {
-			h.getByID(w, id)
+			h.getByID(w, r, id)
 		} else if r.Method == "PUT" {
 			h.update(w, r, id)
 		} else if r.Method == "DELETE" {
-			h.delete(w, id)
+			h.delete(w, r, id)
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
@@ -57,7 +57,7 @@ func (h *ProdukHandler) HandleProduk(w http.ResponseWriter, r *http.Request) {
 	// /api/produk
 	if r.URL.Path == "/api/produk" || r.URL.Path == "/api/produk/" {
 		if r.Method == "GET" {
-			h.getAll(w)
+			h.getAll(w, r)
 		} else if r.Method == "POST" {
 			h.create(w, r)
 		} else {
@@ -69,8 +69,9 @@ func (h *ProdukHandler) HandleProduk(w http.ResponseWriter, r *http.Request) {
 	http.NotFound(w, r)
 }
 
-func (h *ProdukHandler) getAll(w http.ResponseWriter) {
-	products, err := h.service.GetAll()
+func (h *ProdukHandler) getAll(w http.ResponseWriter, r *http.Request) {
+	search := r.URL.Query().Get("search")
+	products, err := h.service.GetAll(r.Context(), search)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -85,8 +86,8 @@ func (h *ProdukHandler) getAll(w http.ResponseWriter) {
 	json.NewEncoder(w).Encode(responses)
 }
 
-func (h *ProdukHandler) getByID(w http.ResponseWriter, id int) {
-	p, err := h.service.GetByID(id)
+func (h *ProdukHandler) getByID(w http.ResponseWriter, r *http.Request, id int) {
+	p, err := h.service.GetByID(r.Context(), id)
 	if err != nil {
 		http.Error(w, "Produk belum ada", http.StatusNotFound)
 		return
@@ -103,7 +104,7 @@ func (h *ProdukHandler) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	created, err := h.service.Create(req.ToDomain())
+	created, err := h.service.Create(r.Context(), req.ToDomain())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -122,7 +123,7 @@ func (h *ProdukHandler) update(w http.ResponseWriter, r *http.Request, id int) {
 		return
 	}
 
-	updated, err := h.service.Update(id, req.ToDomain())
+	updated, err := h.service.Update(r.Context(), id, req.ToDomain())
 	if err != nil {
 		http.Error(w, "Produk belum ada", http.StatusNotFound)
 		return
@@ -132,8 +133,8 @@ func (h *ProdukHandler) update(w http.ResponseWriter, r *http.Request, id int) {
 	json.NewEncoder(w).Encode(dto.FromDomainProduk(*updated))
 }
 
-func (h *ProdukHandler) delete(w http.ResponseWriter, id int) {
-	err := h.service.Delete(id)
+func (h *ProdukHandler) delete(w http.ResponseWriter, r *http.Request, id int) {
+	err := h.service.Delete(r.Context(), id)
 	if err != nil {
 		http.Error(w, "Produk belum ada", http.StatusNotFound)
 		return
